@@ -35,18 +35,23 @@ class MainActivity : AppCompatActivity() {
         pipExampleView = PIPExampleView(this,
             onPIPClicked = {
                 PIPManager.requestOverlays(this) {
-                    PIPManager.togglePIP(windowManager, PIPExampleActivity::class.java, pipExampleView) {
-                        PIPManager.isPIP = true
-                        pipExampleView.resetActionListener(onActionMove = {
-                            PIPManager.actionMove(
-                                it,
-                                pipExampleView,
-                                windowManager
-                            )
-                        }, onActionDown = {
-                            PIPManager.actionDown(it)
-                        })
-                    }
+                    PIPManager.togglePIP(PIPManager.isPIP, this, PIPExampleActivity::class.java, pipExampleView,
+                        beforeEnterPIP = {
+                            PIPManager.isPIP = true
+                            pipExampleView.resetActionListener(onActionMove = {
+                                PIPManager.actionMove(
+                                    it,
+                                    pipExampleView,
+                                    windowManager
+                                )
+                            }, onActionDown = {
+                                PIPManager.actionDown(it)
+                            })
+                        },
+                        afterExitPIP = {
+                            PIPManager.isPIP = false
+                        }
+                    )
                 }
             },
             onCloseClicked = {
@@ -54,7 +59,7 @@ class MainActivity : AppCompatActivity() {
                 if (PIPManager.isPIP) {
 
                     PIPManager.removeFromWindowManager(
-                        windowManager,
+                        this,
                         pipExampleView
                     )
                 }
@@ -67,7 +72,7 @@ class MainActivity : AppCompatActivity() {
         )
 
         PIPManager.getPIPViewGroup = {
-            PIPManager.removeFromWindowManager(windowManager, pipExampleView)
+            PIPManager.removeFromWindowManager(this, pipExampleView)
 
             PIPManager.isPIP = false
 
@@ -77,7 +82,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        PIPManager.removeFromWindowManager(windowManager, pipExampleView)
+        PIPManager.removeFromWindowManager(this, pipExampleView)
         Log.d("???", "MainActivity onDestroy")
     }
 }

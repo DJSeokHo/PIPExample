@@ -15,7 +15,6 @@ import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.FrameLayout
 import com.swein.exoplayerkotlin.framework.display.DisplayUtility
-import com.swein.pipexample.PIPExampleActivity
 import java.lang.ref.WeakReference
 
 
@@ -49,38 +48,41 @@ object PIPManager {
         }
     }
 
-    fun togglePIP(windowManager: WindowManager, exitToTarget: Class<*>?, viewGroup: ViewGroup, willEnterPIP: () -> Unit) {
+    fun togglePIP(isPIP: Boolean, activity: Activity, exitToTarget: Class<*>?, viewGroup: ViewGroup,
+                  beforeEnterPIP: () -> Unit, afterExitPIP:() -> Unit
+    ) {
 
         Log.d("???", "isPIP????? $isPIP")
 
         if (isPIP) {
-
-            exitPIPMode(windowManager, exitToTarget, viewGroup) {
-                isPIP = false
-            }
+            exitPIPMode(activity, exitToTarget, viewGroup, afterExitPIP)
         }
         else {
-
+            enterPIPMode(activity, viewGroup, false, 250f, 250 * 0.5625f, beforeEnterPIP)
             getContainer.let {
                 it().get()?.finish()
             }
-
-            enterPIPMode(windowManager, viewGroup, false, 250f, 250 * 0.5625f, willEnterPIP)
         }
 
         Log.d("???", "isPIP now ????? $isPIP")
     }
 
-    fun removeFromWindowManager(windowManager: WindowManager, viewGroup: ViewGroup) {
+    fun removeFromWindowManager(activity: Activity, viewGroup: ViewGroup) {
 
         if (viewGroup.windowToken != null) {
-            windowManager.removeViewImmediate(viewGroup)
+
+            try {
+                activity.windowManager.removeViewImmediate(viewGroup)
+            }
+            catch (e: Exception) {
+                Log.d("???", "${e.message}")
+            }
         }
     }
 
-    private fun enterPIPMode(windowManager: WindowManager, viewGroup: ViewGroup, backToDesktop: Boolean, widthInDp: Float, heightInDp: Float, willEnterPIP: () -> Unit) {
+    private fun enterPIPMode(activity: Activity, viewGroup: ViewGroup, backToDesktop: Boolean, widthInDp: Float, heightInDp: Float, beforeAction: () -> Unit) {
 
-        willEnterPIP()
+        beforeAction()
 
         lastX = 0f
         lastY = 0f
@@ -119,18 +121,17 @@ object PIPManager {
                     }
                 }
 
-                windowManager.addView(viewGroup, layoutParams)
+                activity.windowManager.addView(viewGroup, layoutParams)
             }
 
         }.start()
 
     }
 
-    private fun exitPIPMode(windowManager: WindowManager, exitToTarget: Class<*>?, viewGroup: ViewGroup, exitPIP: (() -> Unit)? = null) {
+    private fun exitPIPMode(activity: Activity, exitToTarget: Class<*>?, viewGroup: ViewGroup, afterAction: () -> Unit) {
 
-        Log.d("???", "exitPIPMode")
         try {
-            removeFromWindowManager(windowManager, viewGroup)
+            removeFromWindowManager(activity, viewGroup)
         }
         catch (e: Exception) {
             Log.d("???", "${e.message}")
@@ -146,12 +147,9 @@ object PIPManager {
         Intent(viewGroup.context, exitToTarget).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             viewGroup.context.startActivity(this)
-            Log.d("???", "startActivity from main")
         }
 
-        exitPIP?.let {
-            it()
-        }
+        afterAction()
     }
 
     fun actionDown(motionEvent: MotionEvent) {
