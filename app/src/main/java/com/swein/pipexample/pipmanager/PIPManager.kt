@@ -27,21 +27,19 @@ object PIPManager {
     private var lastY = 0f
 
     // init this in main activity
-    lateinit var getPIPViewGroup: () -> WeakReference<ViewGroup>
+    var transmitPIPViewGroup: (() -> WeakReference<ViewGroup>)? = null
 
     // init this in pip container activity
-    lateinit var getContainer: () -> WeakReference<Activity>
+    var transmitContainerActivity: (() -> WeakReference<Activity>)? = null
 
-    fun requestOverlays(activity: Activity, afterSuccess: () -> Unit) {
+    fun requestOverlaysPermission(activity: Activity, afterSuccess: () -> Unit) {
 
         if (!Settings.canDrawOverlays(activity)) {
-            if (!Settings.canDrawOverlays(activity)) {
-                val intent = Intent(
-                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                    Uri.parse("package:" + activity.packageName)
-                )
-                activity.startActivityForResult(intent, 999)
-            }
+            val intent = Intent(
+                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                Uri.parse("package:" + activity.packageName)
+            )
+            activity.startActivityForResult(intent, 999)
         }
         else {
             afterSuccess()
@@ -59,7 +57,7 @@ object PIPManager {
         }
         else {
             enterPIPMode(activity, viewGroup, false, 250f, 250 * 0.5625f, beforeEnterPIP)
-            getContainer.let {
+            transmitContainerActivity?.let {
                 it().get()?.finish()
             }
         }

@@ -34,7 +34,7 @@ class MainActivity : AppCompatActivity() {
 
         pipExampleView = PIPExampleView(this,
             onPIPClicked = {
-                PIPManager.requestOverlays(this) {
+                PIPManager.requestOverlaysPermission(this) {
                     PIPManager.togglePIP(PIPManager.isPIP, this, PIPExampleActivity::class.java, pipExampleView,
                         beforeEnterPIP = {
                             PIPManager.isPIP = true
@@ -64,14 +64,16 @@ class MainActivity : AppCompatActivity() {
                     )
                 }
                 else {
-                    PIPManager.getContainer().get()?.finish()
+                    PIPManager.transmitContainerActivity?.let {
+                        it().get()?.finish()
+                    }
                 }
 
                 PIPManager.isPIP = false
             }
         )
 
-        PIPManager.getPIPViewGroup = {
+        PIPManager.transmitPIPViewGroup = {
             PIPManager.removeFromWindowManager(this, pipExampleView)
 
             PIPManager.isPIP = false

@@ -14,7 +14,7 @@ class PIPExampleActivity : AppCompatActivity() {
         findViewById(R.id.frameLayoutPlayerContainer)
     }
 
-    private var pipExampleView: PIPExampleView? = null
+    private var pipExampleViewWeakReference: WeakReference<PIPExampleView>? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -24,7 +24,7 @@ class PIPExampleActivity : AppCompatActivity() {
 
         initView()
 
-        PIPManager.getContainer = {
+        PIPManager.transmitContainerActivity = {
             WeakReference(this)
         }
     }
@@ -32,23 +32,32 @@ class PIPExampleActivity : AppCompatActivity() {
     private fun initView() {
 
         Log.d("???", "receive pip")
-        pipExampleView = PIPManager.getPIPViewGroup().get() as PIPExampleView
+        PIPManager.transmitPIPViewGroup?.let { transmitPIPViewGroup ->
 
-        // reset player size
-        val layoutParams = FrameLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.MATCH_PARENT
-        )
-        pipExampleView?.layoutParams = layoutParams
+            pipExampleViewWeakReference = WeakReference(transmitPIPViewGroup().get() as PIPExampleView).apply {
 
-        frameLayoutPlayerContainer.addView(pipExampleView)
+                // reset player size
+                val layoutParams = FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
+                )
+                this.get()?.layoutParams = layoutParams
+
+                frameLayoutPlayerContainer.removeAllViews()
+                frameLayoutPlayerContainer.addView(this.get())
+
+            }
+        } ?: run {
+            finish()
+        }
 
     }
 
     override fun onDestroy() {
         super.onDestroy()
         frameLayoutPlayerContainer.removeAllViews()
-        pipExampleView = null
+        pipExampleViewWeakReference?.clear()
+        pipExampleViewWeakReference = null
         Log.d("???", "PipExampleActivity onDestroy")
     }
 }
